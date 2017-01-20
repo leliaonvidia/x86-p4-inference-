@@ -301,8 +301,16 @@ bool glTexture::UploadCPU( void* data )
 		GL_CHECK("glMapBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB)");
 		return NULL;
 	}
+	
+	if( !mInteropHost || !mInteropDevice )
+	{
+		if( !cudaAllocMapped(&mInteropHost, &mInteropDevice, mSize) )
+			return false;
+	}
+	
+	cudaMemcpy(mInteropHost, data, mSize, cudaMemcpyDeviceToHost);
 
-	memcpy(ptr, data, mSize);
+	memcpy(ptr, mInteropHost, mSize);
 
 	GL(glUnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB)); 
 
@@ -311,19 +319,17 @@ bool glTexture::UploadCPU( void* data )
 	//GL(glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, mDMA));
 	GL(glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, mWidth, mHeight, glTextureLayout(mFormat), glTextureType(mFormat), NULL));
 	
+	
+	
+	
 	GL(glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, 0));
 	GL(glBindTexture(GL_TEXTURE_2D, 0));
 	GL(glDisable(GL_TEXTURE_2D));
 
-	/*if( !mInteropHost || !mInteropDevice )
-	{
-		if( !cudaAllocMapped(&mInteropHost, &mInteropDevice, mSize) )
-			return false;
-	}
 	
-	memcpy(mInteropHost, data, mSize);
+	//memcpy(mInteropHost, data, mSize);
 	
-	void* devGL = MapCUDA();
+	/*void* devGL = MapCUDA();
 	
 	if( !devGL )
 		return false;

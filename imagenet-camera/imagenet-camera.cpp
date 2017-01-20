@@ -16,7 +16,7 @@
 #include "imageNet.h"
 
 
-#define DEFAULT_CAMERA -1	// -1 for onboard camera, or change to index of /dev/video V4L2 camera (>=0)	
+#define DEFAULT_CAMERA 0	// -1 for onboard camera, or change to index of /dev/video V4L2 camera (>=0)	
 		
 		
 		
@@ -57,7 +57,7 @@ int main( int argc, char** argv )
 	/*
 	 * create the camera device
 	 */
-	gstCamera* camera = gstCamera::Create(DEFAULT_CAMERA);
+	gstCamera* camera = gstCamera::Create( 640, 480 , DEFAULT_CAMERA);
 	
 	if( !camera )
 	{
@@ -123,6 +123,10 @@ int main( int argc, char** argv )
 	 * processing loop
 	 */
 	float confidence = 0.0f;
+
+        // leo modified convert RGBA for dGPU
+        void* imgRGBA = NULL;
+        cudaMalloc (&imgRGBA , camera->GetWidth()*camera->GetHeight()*sizeof(float4)); 
 	
 	while( !signal_recieved )
 	{
@@ -136,7 +140,7 @@ int main( int argc, char** argv )
 		//	printf("imagenet-camera:  recieved new frame  CPU=0x%p  GPU=0x%p\n", imgCPU, imgCUDA);
 		
 		// convert from YUV to RGBA
-		void* imgRGBA = NULL;
+		//void* imgRGBA = NULL;
 		
 		if( !camera->ConvertRGBA(imgCUDA, &imgRGBA) )
 			printf("imagenet-camera:  failed to convert from NV12 to RGBA\n");

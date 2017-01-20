@@ -85,9 +85,9 @@ private:
 	bool     mLatestRetrieved;
 	
 	void* mRGBA[NUM_RINGBUFFERS];
-	int   mV4L2Device;	// -1 for onboard, >=0 for V4L2 device
+	int   mV4L2Device ;	// -1 for onboard, >=0 for V4L2 device
 	
-	inline bool onboardCamera() const		{ return (mV4L2Device < 0); }
+	inline bool onboardCamera() const		{ return 0 /* (mV4L2Device < 0)*/; }
 };
 
 #endif

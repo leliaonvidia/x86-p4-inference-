@@ -42,7 +42,7 @@ int main( int argc, char** argv )
 	/*
 	 * create the camera device
 	 */
-	gstCamera* camera = gstCamera::Create();
+	gstCamera* camera = gstCamera::Create(640,480,0);
 	
 	if( !camera )
 	{
@@ -98,6 +98,7 @@ int main( int argc, char** argv )
 	while( !signal_recieved )
 	{
 		void* imgCPU  = NULL;
+		
 		void* imgCUDA = NULL;
 		
 		// get the latest frame

@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 project(jetson-inference)
 
 # setup tensorRT flags
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")	# -std=gnu++11
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 ")	# -std=gnu+11
 set(BUILD_DEPS "YES" CACHE BOOL "If YES, will install dependencies into sandbox.  Automatically reset to NO after dependencies are installed.")
 
 
@@ -32,9 +32,10 @@ find_package(CUDA)
 set(
 	CUDA_NVCC_FLAGS
 	${CUDA_NVCC_FLAGS}; 
-    -O3 -gencode arch=compute_53,code=sm_53
+    -O3 -gencode arch=compute_52,code=sm_52 -gencode arch=compute_61,code=sm_61 
 )
 
+list(APPEND CUDA_NVCC_FLAGS "-std=c++11")
 
 # setup project output paths
 set(PROJECT_OUTPUT_DIR  ${PROJECT_BINARY_DIR}/${CMAKE_SYSTEM_PROCESSOR})
@@ -53,7 +54,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_OUTPUT_DIR}/lib)
 
 # build C/C++ interface
 include_directories(${PROJECT_INCLUDE_DIR} ${GIE_PATH}/include)
-include_directories(/usr/include/gstreamer-1.0 /usr/lib/aarch64-linux-gnu/gstreamer-1.0/include /usr/include/glib-2.0 /usr/include/libxml2 /usr/lib/aarch64-linux-gnu/glib-2.0/include/)
+include_directories(/usr/include/gstreamer-1.0 /usr/lib/aarch64-linux-gnu/gstreamer-1.0/include /usr/include/glib-2.0 /usr/include/libxml2 /usr/lib/x86_64-linux-gnu/glib-2.0/include/)
 
 file(GLOB inferenceSources *.cpp *.cu camera/*.cpp cuda/*.cu display/*.cpp)
 file(GLOB inferenceIncludes *.h camera/*.h cuda/*.h display/*.h)
@@ -77,6 +78,7 @@ foreach(include ${networkData})
 	file(COPY ${include} DESTINATION ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 	#configure_file(${include} ${CMAKE_RUNTIME_OUTPUT_DIRECTORY} COPYONLY)
 endforeach()
+
 
 
 # copy tools

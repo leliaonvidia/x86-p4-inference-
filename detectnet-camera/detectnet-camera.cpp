@@ -18,8 +18,8 @@
 #include "detectNet.h"
 
 
-#define DEFAULT_CAMERA -1	// -1 for onboard camera, or change to index of /dev/video V4L2 camera (>=0)	
-		
+#define DEFAULT_CAMERA 0	// -1 for onboard camera, or change to index of /dev/video V4L2 camera (>=0)
+#define DEFAULT_DISPLAY 1      // 0 for CUDA_GL_interop , 1 for CPU Display 	
 
 bool signal_recieved = false;
 
@@ -65,7 +65,7 @@ int main( int argc, char** argv )
 	/*
 	 * create the camera device
 	 */
-	gstCamera* camera = gstCamera::Create(DEFAULT_CAMERA);
+	gstCamera* camera = gstCamera::Create( 1600, 1200  ,DEFAULT_CAMERA);
 	
 	if( !camera )
 	{
@@ -151,6 +151,14 @@ int main( int argc, char** argv )
 	 */
 	float confidence = 0.0f;
 	
+	//CUDA(cudaSetDeviceFlags(cudaDeviceMapHost));
+	// CUDA(cudaSetDeviceFlags(cudaDeviceMapHost || cudaDeviceBlockingSync ));
+	//CUDA( cudaSetDevice(0) );
+	
+	// convert from YUV to RGBA
+		void* imgRGBA = NULL;
+		
+       cudaMalloc(&imgRGBA, camera->GetWidth()*camera->GetHeight() * sizeof(float4));  // leo modified for dGPU
 	while( !signal_recieved )
 	{
 		void* imgCPU  = NULL;
@@ -159,12 +167,15 @@ int main( int argc, char** argv )
 		// get the latest frame
 		if( !camera->Capture(&imgCPU, &imgCUDA, 1000) )
 			printf("\ndetectnet-camera:  failed to capture frame\n");
+			//CUDA(cudaDeviceSynchronize()); 
 
-		// convert from YUV to RGBA
-		void* imgRGBA = NULL;
 		
+
+			
 		if( !camera->ConvertRGBA(imgCUDA, &imgRGBA) )
 			printf("detectnet-camera:  failed to convert from NV12 to RGBA\n");
+			
+			CUDA(cudaDeviceSynchronize()); // leo check 
 
 		// classify image with detectNet
 		int numBoundingBoxes = maxBoxes;
@@ -203,7 +214,7 @@ int main( int argc, char** argv )
 				
 				font->RenderOverlay((float4*)imgRGBA, (float4*)imgRGBA, camera->GetWidth(), camera->GetHeight(),
 								    str, 10, 10, make_float4(255.0f, 255.0f, 255.0f, 255.0f));
-			}*/
+			} */
 			
 			if( display != NULL )
 			{
@@ -229,13 +240,19 @@ int main( int argc, char** argv )
 		 						   camera->GetWidth(), camera->GetHeight()));
 
 				// map from CUDA to openGL using GL interop
-				void* tex_map = texture->MapCUDA();
+				if( DEFAULT_DISPLAY ==0 ){
+				
+					void* tex_map = texture->MapCUDA();
 
-				if( tex_map != NULL )
-				{
-					cudaMemcpy(tex_map, imgRGBA, texture->GetSize(), cudaMemcpyDeviceToDevice);
-					texture->Unmap();
-				}
+					if( tex_map != NULL ){
+						cudaMemcpy(tex_map, imgRGBA, texture->GetSize(), cudaMemcpyDeviceToDevice);
+						texture->Unmap();
+					}
+				} else {
+				
+				 texture->UploadCPU( imgRGBA);
+				 printf("\ndetectnet-camera:  not using NV Display device\n");
+				} 
 
 				// draw the texture
 				texture->Render(100,100);		

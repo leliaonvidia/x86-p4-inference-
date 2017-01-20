@@ -17,7 +17,7 @@ inline bool cudaAllocMapped( void** cpuPtr, void** gpuPtr, size_t size )
 	if( !cpuPtr || !gpuPtr || size == 0 )
 		return false;
 
-	//CUDA(cudaSetDeviceFlags(cudaDeviceMapHost));
+	//CUDA(cudaSetDeviceFlags(cudaDeviceMapHost || cudaDeviceBlockingSync ));
 
 	if( CUDA_FAILED(cudaHostAlloc(cpuPtr, size, cudaHostAllocMapped)) )
 		return false;

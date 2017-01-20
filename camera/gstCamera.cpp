@@ -18,6 +18,7 @@
 #include "cudaMappedMemory.h"
 #include "cudaYUV.h"
 #include "cudaRGB.h"
+#include "cnmem.h" // leo modified 
 
 
 
@@ -87,9 +88,11 @@ bool gstCamera::ConvertRGBA( void* input, void** output )
 	else
 	{
 		// USB webcam is RGB
-		if( CUDA_FAILED(cudaRGBToRGBAf((uchar3*)input, (float4*)mRGBA[mLatestRGBA], mWidth, mHeight)) )
+		if( CUDA_FAILED(cudaRGBToRGBAf((uchar3*)input, (float4*)mRGBA[mLatestRGBA], mWidth, mHeight)))
 			return false;
 	}
+	
+	
 	
 	*output     = mRGBA[mLatestRGBA];
 	mLatestRGBA = (mLatestRGBA + 1) % NUM_RINGBUFFERS;
@@ -240,7 +243,7 @@ void gstCamera::checkBuffer()
 	mDepth  = (gstSize * 8) / (width * height);
 	mSize   = gstSize;
 	
-	//printf(LOG_GSTREAMER "gstreamer camera recieved %ix%i frame (%u bytes, %u bpp)\n", width, height, gstSize, mDepth);
+	printf(LOG_GSTREAMER "gstreamer camera recieved %ix%i frame (%u bytes, %u bpp)\n", width, height, gstSize, mDepth);
 	
 	// make sure ringbuffer is allocated
 	if( !mRingbufferCPU[0] )
@@ -293,8 +296,8 @@ bool gstCamera::buildLaunchStr()
 	{
 		ss << "v4l2src device=/dev/video" << mV4L2Device << " ! ";
 		ss << "video/x-raw, width=(int)" << mWidth << ", height=(int)" << mHeight << ", "; 
-		ss << "format=RGB ! videoconvert ! video/x-raw, format=RGB ! videoconvert !";
-		ss << "appsink name=mysink";
+		ss << "format=RGB  ! videoconvert" << " ! queue" ; /* ! video/x-raw,format=RGB ! videoconvert ! "*/ 
+		ss << "! appsink name=mysink";
 	}
 	
 	mLaunchStr = ss.str();

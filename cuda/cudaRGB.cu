@@ -23,7 +23,7 @@ __global__ void RGBToRGBAf(uchar3* srcImage,
     if (y >= height)
         return;
 
-//	printf("cuda thread %i %i  %i %i pixel %i \n", x, y, width, height, pixel);
+	//printf("cuda thread %i %i  %i %i pixel %i \n", x, y, width, height, pixel);
 		
 	const float  s  = 1.0f;
 	const uchar3 px = srcImage[pixel];
@@ -40,6 +40,8 @@ cudaError_t cudaRGBToRGBAf( uchar3* srcDev, float4* destDev, size_t width, size_
 	const dim3 gridDim(iDivUp(width,blockDim.x), iDivUp(height,blockDim.y), 1);
 
 	RGBToRGBAf<<<gridDim, blockDim>>>( srcDev, destDev, width, height );
+	
+	//cudaThreadSynchronize();
 	
 	return CUDA(cudaGetLastError());
 }
