@@ -186,16 +186,16 @@ bool detectNet::Detect( float* rgba, uint32_t width, uint32_t height, float* bou
 	float* net_cvg   = mOutputs[OUTPUT_CVG].CPU;
 	float* net_rects = mOutputs[OUTPUT_BBOX].CPU;
 	
-	const int ow  = mOutputs[OUTPUT_BBOX].dims.w;		// number of columns in bbox grid in X dimension
-	const int oh  = mOutputs[OUTPUT_BBOX].dims.h;		// number of rows in bbox grid in Y dimension
+	const int ow  = mOutputs[OUTPUT_BBOX].dims.w();		// number of columns in bbox grid in X dimension
+	const int oh  = mOutputs[OUTPUT_BBOX].dims.h();		// number of rows in bbox grid in Y dimension
 	const int owh = ow * oh;							// total number of bbox in grid
 	const int cls = GetNumClasses();					// number of object classes in coverage map
 	
-	const float cell_width  = /*width*/ mInputDims.w / ow;
-	const float cell_height = /*height*/ mInputDims.h / oh;
+	const float cell_width  = /*width*/ mInputDims.w() / ow;
+	const float cell_height = /*height*/ mInputDims.h() / oh;
 	
-	const float scale_x = float(width) / float(mInputDims.w);
-	const float scale_y = float(height) / float(mInputDims.h);
+	const float scale_x = float(width) / float(mInputDims.w());
+	const float scale_y = float(height) / float(mInputDims.h());
 
 #ifdef DEBUG_CLUSTERING	
 	printf("input width %i height %i\n", (int)mInputDims.w, (int)mInputDims.h);
