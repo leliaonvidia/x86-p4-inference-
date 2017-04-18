@@ -5,6 +5,7 @@
 #include "tensorNet.h"
 #include "cudaMappedMemory.h"
 #include "cudaResize.h"
+#include "cuda/cudaMappedMemory.h"
 
 #include <iostream>
 #include <fstream>
@@ -83,7 +84,7 @@ bool tensorNet::ProfileModel(const std::string& deployFile,			   // name for caf
 					         std::ostream& gieModelStream)			   // output stream for the GIE model
 {
 	// create API root class - must span the lifetime of the engine usage
-	nvinfer1::IBuilder* builder = createInferBuilder(gLogger);
+	nvinfer1::IBuilder* builder = nvinfer1::createInferBuilder(gLogger);
 	nvinfer1::INetworkDefinition* network = builder->createNetwork();
 
 	builder->setDebugSync(mEnableDebug);
@@ -151,7 +152,7 @@ bool tensorNet::ProfileModel(const std::string& deployFile,			   // name for caf
 	parser->destroy(); //delete parser;
 
 	// serialize the engine, then close everything down
-	engine->serialize(gieModelStream);
+	engine->serialize(/* gieModelStream */ );
 	engine->destroy();
 	builder->destroy();
 	
@@ -212,7 +213,7 @@ bool tensorNet::LoadNetwork( const char* prototxt_path, const char* model_path, 
 		cache.close();
 
 		// test for half FP16 support
-		nvinfer1::IBuilder* builder = createInferBuilder(gLogger);
+		nvinfer1::IBuilder* builder = nvinfer1::createInferBuilder(gLogger);
 		
 		if( builder != NULL )
 		{
@@ -229,15 +230,15 @@ bool tensorNet::LoadNetwork( const char* prototxt_path, const char* model_path, 
 	/*
 	 * create runtime inference engine execution context
 	 */
-	nvinfer1::IRuntime* infer = createInferRuntime(gLogger);
+	nvinfer1::IRuntime* infer = nvinfer1::createInferRuntime(gLogger);
 	
 	if( !infer )
 	{
 		printf(LOG_GIE "failed to create InferRuntime\n");
 		return 0;
 	}
-	
-	nvinfer1::ICudaEngine* engine = infer->deserializeCudaEngine(gieModelStream);
+	std::string modelStr(gieModelStream.str());
+	nvinfer1::ICudaEngine* engine = infer->deserializeCudaEngine(modelStr.c_str(), modelStr.size(), nullptr);
 
 	if( !engine )
 	{
@@ -276,10 +277,11 @@ bool tensorNet::LoadNetwork( const char* prototxt_path, const char* model_path, 
 	
 	printf(LOG_GIE "%s input  binding index:  %i\n", model_path, inputIndex);
 	
-	nvinfer1::Dims3 inputDims  = engine->getBindingDimensions(inputIndex);
-	size_t inputSize  = inputDims.c * inputDims.h * inputDims.w * sizeof(float);
+	nvinfer1::Dims iDims  = engine->getBindingDimensions(inputIndex);
+	nvinfer1::Dims3 inputDims({iDims.d[0], iDims.d[1], iDims.d[2]});
+	size_t inputSize  = inputDims.c() * inputDims.h() * inputDims.w() * sizeof(float);
 	
-	printf(LOG_GIE "%s input  dims (c=%u h=%u w=%u) size=%zu\n", model_path, inputDims.c, inputDims.h, inputDims.w, inputSize);
+	printf(LOG_GIE "%s input  dims (c=%u h=%u w=%u) size=%zu\n", model_path, inputDims.c(), inputDims.h(), inputDims.w(), inputSize);
 	
 	/*
 	 * allocate memory to hold the input image
@@ -291,8 +293,8 @@ bool tensorNet::LoadNetwork( const char* prototxt_path, const char* model_path, 
 	}
 	
 	mInputSize   = inputSize;
-	mWidth       = inputDims.w;
-	mHeight      = inputDims.h;
+	mWidth       = inputDims.w();
+	mHeight      = inputDims.h();
 	
 	/*
 	 * setup network output buffers
@@ -303,9 +305,11 @@ bool tensorNet::LoadNetwork( const char* prototxt_path, const char* model_path, 
 	{
 		const int outputIndex = engine->getBindingIndex(output_blobs[n].c_str());
 		printf(LOG_GIE "%s output %i %s  binding index:  %i\n", model_path, n, output_blobs[n].c_str(), outputIndex);
-		nvinfer1::Dims3 outputDims = engine->getBindingDimensions(outputIndex);
-		size_t outputSize = outputDims.c * outputDims.h * outputDims.w * sizeof(float);
-		printf(LOG_GIE "%s output %i %s  dims (c=%u h=%u w=%u) size=%zu\n", model_path, n, output_blobs[n].c_str(), outputDims.c, outputDims.h, outputDims.w, outputSize);
+		nvinfer1::Dims oDims  = engine->getBindingDimensions(outputIndex);
+		nvinfer1::Dims3 outputDims({iDims.d[0], iDims.d[1], iDims.d[2]});
+		size_t outputSize = outputDims.c() * outputDims.h() * outputDims.w() * sizeof(float);
+		printf(LOG_GIE "%s output %i %s  dims (c=%u h=%u w=%u) size=%zu\n", model_path, n, output_blobs[n].c_str(),
+               outputDims.c(), outputDims.h(), outputDims.w(), outputSize);
 	
 		// allocate output memory 
 		void* outputCPU  = NULL;
@@ -313,7 +317,7 @@ bool tensorNet::LoadNetwork( const char* prototxt_path, const char* model_path, 
 		
 		if( !cudaAllocMapped((void**)&outputCPU, (void**)&outputCUDA, outputSize) )
 		{
-			printf("failed to alloc CUDA mapped memory for %u output classes\n", outputDims.c);
+			printf("failed to alloc CUDA mapped memory for %u output classes\n", outputDims.c());
 			return false;
 		}
 	

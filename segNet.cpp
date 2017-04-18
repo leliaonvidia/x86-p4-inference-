@@ -267,9 +267,9 @@ bool segNet::Overlay( float* rgba, float* output, uint32_t width, uint32_t heigh
 	// retrieve scores
 	float* scores = mOutputs[0].CPU;
 
-	const int s_w = mOutputs[0].dims.w;
-	const int s_h = mOutputs[0].dims.h;
-	const int s_c = mOutputs[0].dims.c;
+	const int s_w = mOutputs[0].dims.w();
+	const int s_h = mOutputs[0].dims.h();
+	const int s_c = mOutputs[0].dims.c();
 		
 	const float s_x = float(width) / float(s_w);
 	const float s_y = float(height) / float(s_h);

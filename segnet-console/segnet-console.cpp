@@ -44,7 +44,7 @@ int main( int argc, char** argv )
 	
 	const char* imgFilename = argv[1];
 	const char* outFilename = argv[2];
-	const char* modelName   = "fcn-alexnet-cityscapes-sd";
+	const char* modelName   = "FCN-Alexnet-Cityscapes-HD";
 
 	if( argc > 3 )
 		modelName = argv[3];	

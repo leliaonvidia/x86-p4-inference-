@@ -11,7 +11,10 @@
 
 #include <sstream>
 
-
+namespace nvinfer1
+{
+	typedef DimsCHW Dims3;
+}
 /**
  * Abstract class for loading a tensor network with TensorRT.
  * For example implementations, @see imageNet and @see detectNet
